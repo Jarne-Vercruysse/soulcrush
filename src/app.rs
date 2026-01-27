@@ -4,6 +4,8 @@ use leptos_router::{
     components::{Route, Router, Routes},
     StaticSegment,
 };
+use time::OffsetDateTime;
+use uuid::Uuid;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -57,5 +59,59 @@ fn HomePage() -> impl IntoView {
     view! {
         <h1>"Welcome to Leptos!"</h1>
         <button on:click=on_click>"Click Me: " {count}</button>
+    }
+}
+
+struct Solicitatie {
+    id: Uuid,
+    company: Company,
+    status: Status,
+    date: OffsetDateTime,
+}
+
+struct Company {
+    id: Uuid,
+    name: String,
+    website: String,
+    ceo: String,
+    industry: String,
+}
+
+#[derive(Default)]
+enum Status {
+    #[default]
+    ToDo,
+    Solicitated,
+    Pending,
+    Accepted,
+    Rejected,
+}
+
+impl Solicitatie {
+    pub fn new(company: Company) -> Self {
+        let id = Uuid::new_v4();
+        let status = Status::default();
+        let date = OffsetDateTime::now_utc();
+
+        Self {
+            id,
+            company,
+            status,
+            date,
+        }
+    }
+}
+
+impl Company {
+    pub fn new(name: String, website: String, ceo: String, industry: String) -> Self {
+        let id = Uuid::new_v4();
+
+        Self {
+            id,
+            name,
+            website,
+            ceo,
+            industry,
+        }
     }
 }
