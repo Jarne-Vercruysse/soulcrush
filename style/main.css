@@ -72,6 +72,14 @@
   --font-body:         'IBM Plex Mono', 'Fira Code', monospace;
   --font-accent:       'Russo One', 'Bebas Neue', sans-serif;
 
+  /* ─── FONT SIZES ─── */
+  --text-xs:           0.75rem;   /* 12px */
+  --text-sm:           0.875rem;  /* 14px */
+  --text-base:         1rem;      /* 16px */
+  --text-lg:           1.125rem;  /* 18px */
+  --text-xl:           1.25rem;   /* 20px */
+  --text-2xl:          1.5rem;    /* 24px */
+
   /* ─── BORDERS & LINES ─── */
   --border-subtle:     1px solid oklch(30% 0.05 280 / 0.5);
   --border-glow:       1px solid oklch(65% 0.28 330 / 0.8);
@@ -184,7 +192,7 @@ h1 {
   border-bottom: var(--border-subtle);
   color: var(--neon-cyan);
   font-family: var(--font-display);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;
@@ -192,7 +200,7 @@ h1 {
 
   @media (min-width: 600px) {
     padding: var(--space-md) var(--space-lg);
-    font-size: 0.9rem;
+    font-size: var(--text-base);
   }
 
   &:hover {
@@ -206,7 +214,7 @@ h1 {
 
   & .toggle-icon {
     transition: var(--transition-smooth);
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     
     &.open {
       transform: rotate(90deg);
@@ -245,14 +253,14 @@ h1 {
   flex: 1;
 
   & label {
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     font-family: var(--font-display);
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--text-secondary);
 
     @media (min-width: 600px) {
-      font-size: 0.75rem;
+      font-size: var(--text-sm);
     }
   }
 
@@ -264,11 +272,12 @@ h1 {
     border-radius: 4px;
     color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: 1rem;
+    font-size: var(--text-base);
     transition: var(--transition-smooth);
 
     @media (min-width: 600px) {
       padding: var(--space-sm) var(--space-md);
+      font-size: var(--text-lg);
     }
 
     &:focus {
@@ -330,7 +339,7 @@ h1 {
     background: var(--cyber-shadow);
     border-bottom: var(--border-subtle);
     font-family: var(--font-display);
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -384,24 +393,24 @@ h1 {
 .card-company {
   grid-area: company;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--text-lg);
   color: var(--text-primary);
 
   @media (min-width: 768px) {
     flex: 2;
     font-weight: normal;
-    font-size: 0.9rem;
+    font-size: var(--text-base);
   }
 }
 
 .card-industry {
   grid-area: industry;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--text-muted);
 
   @media (min-width: 768px) {
     flex: 1.5;
-    font-size: 0.9rem;
+    font-size: var(--text-base);
     color: var(--text-secondary);
   }
 }
@@ -409,12 +418,13 @@ h1 {
 .card-link {
   grid-area: link;
   color: var(--neon-cyan);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   text-decoration: none;
   transition: var(--transition-smooth);
 
   @media (min-width: 768px) {
     flex: 0.75;
+    font-size: var(--text-base);
   }
 
   &:hover {
@@ -451,7 +461,7 @@ h1 {
   padding: var(--space-xs) var(--space-sm);
   border-radius: 4px;
   border: none;
-  font-size: 0.65rem;
+  font-size: var(--text-xs);
   font-family: var(--font-display);
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -460,7 +470,7 @@ h1 {
   transition: var(--transition-smooth);
 
   @media (min-width: 600px) {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
   }
 
   &:hover {
@@ -506,12 +516,12 @@ h1 {
   border: 1px solid var(--error);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   font-family: var(--font-body);
   transition: var(--transition-smooth);
 
   @media (min-width: 600px) {
-    font-size: 0.75rem;
+    font-size: var(--text-sm);
   }
 
   &:hover {
@@ -529,13 +539,13 @@ h1 {
   border-radius: 4px;
   cursor: pointer;
   font-family: var(--font-display);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   transition: var(--transition-smooth);
 
   @media (min-width: 600px) {
-    font-size: 0.85rem;
+    font-size: var(--text-base);
   }
 
   &:hover {
