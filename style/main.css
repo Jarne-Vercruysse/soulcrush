@@ -301,65 +301,144 @@ h1 {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   TABLE — SOLICITATIE
+   APPLICATION LIST — Hybrid Card/Row Layout
    ══════════════════════════════════════════════════════════════ */
 
-.solicitatie-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--cyber-surface);
-  box-shadow: var(--shadow-deep);
-  border-radius: 8px;
-  overflow: hidden;
-  border: var(--border-subtle);
-  font-size: 0.85rem;
+.application-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 
-  @media (min-width: 600px) {
-    font-size: 1rem;
+  @media (min-width: 768px) {
+    background: var(--cyber-surface);
+    border: var(--border-subtle);
+    border-radius: 8px;
+    box-shadow: var(--shadow-deep);
+    gap: 0;
   }
+}
 
-  & th,
-  & td {
-    padding: var(--space-sm);
-    text-align: left;
-    border-bottom: var(--border-subtle);
+/* ─── HEADER (desktop only) ─── */
+.list-header {
+  display: none;
 
-    @media (min-width: 600px) {
-      padding: var(--space-sm) var(--space-md);
-    }
-  }
-
-  & th {
+  @media (min-width: 768px) {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
     background: var(--cyber-shadow);
+    border-bottom: var(--border-subtle);
     font-family: var(--font-display);
+    font-size: 0.7rem;
     font-weight: 600;
-    font-size: 0.65rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-secondary);
 
-    @media (min-width: 600px) {
-      font-size: 0.75rem;
+    & > span:nth-child(1) { flex: 2; }
+    & > span:nth-child(2) { flex: 1.5; }
+    & > span:nth-child(3) { flex: 0.75; }
+    & > span:nth-child(4) { flex: 1; }
+    & > span:nth-child(5) { width: 50px; }
+  }
+}
+
+/* ─── CARD/ROW ─── */
+.application-card {
+  display: grid;
+  grid-template-areas:
+    "company status"
+    "industry industry"
+    "link delete";
+  grid-template-columns: 1fr auto;
+  gap: var(--space-xs) var(--space-sm);
+  padding: var(--space-md);
+  background: var(--cyber-surface);
+  border: var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: var(--shadow-deep);
+  transition: var(--transition-fast);
+
+  @media (min-width: 768px) {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: transparent;
+    border: none;
+    border-bottom: var(--border-subtle);
+    border-radius: 0;
+    box-shadow: none;
+
+    &:last-child {
+      border-bottom: none;
     }
   }
 
-  & tbody tr {
-    transition: var(--transition-fast);
+  &:hover {
+    background: var(--cyber-elevated);
+  }
+}
 
-    &:hover {
-      background: var(--cyber-elevated);
-    }
+/* ─── CARD ELEMENTS ─── */
+.card-company {
+  grid-area: company;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+
+  @media (min-width: 768px) {
+    flex: 2;
+    font-weight: normal;
+    font-size: 0.9rem;
+  }
+}
+
+.card-industry {
+  grid-area: industry;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+
+  @media (min-width: 768px) {
+    flex: 1.5;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+}
+
+.card-link {
+  grid-area: link;
+  color: var(--neon-cyan);
+  font-size: 0.8rem;
+  text-decoration: none;
+  transition: var(--transition-smooth);
+
+  @media (min-width: 768px) {
+    flex: 0.75;
   }
 
-  & a {
-    color: var(--neon-cyan);
-    text-decoration: none;
-    transition: var(--transition-smooth);
+  &:hover {
+    color: var(--neon-magenta);
+    text-shadow: var(--glow-magenta);
+  }
+}
 
-    &:hover {
-      color: var(--neon-magenta);
-      text-shadow: var(--glow-magenta);
-    }
+.application-card .status-badge {
+  grid-area: status;
+  justify-self: end;
+
+  @media (min-width: 768px) {
+    flex: 1;
+    justify-self: start;
+  }
+}
+
+.card-delete {
+  grid-area: delete;
+  justify-self: end;
+
+  @media (min-width: 768px) {
+    width: 50px;
+    text-align: center;
   }
 }
 

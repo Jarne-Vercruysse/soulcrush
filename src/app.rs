@@ -150,79 +150,72 @@ fn HomePage() -> impl IntoView {
     view! {
         <h1>"Job Applications"</h1>
         <Suspense fallback=|| view! { <p>"Loading..."</p> }>
-            <SolicitatieTable />
+            <ApplicationList />
         </Suspense>
     }
 }
 
 #[component]
-fn SolicitatieTable() -> impl IntoView {
+fn ApplicationList() -> impl IntoView {
     let solicitaties =
         expect_context::<Resource<Result<Vec<AllSolicitatiesRequest>, ServerFnError>>>();
 
     view! {
         <CreateApplicationForm />
-        <table class="solicitatie-table">
-            <tbody>
-                <Suspense fallback=|| ()>
-                    {move || Suspend::new(async move {
-                        match solicitaties.await {
-                            Ok(data) => {
-                                view! {
-                                    <For each=move || data.clone() key=|s| s.id let:solicitatie>
-                                        <SolicitatieRow solicitatie />
-                                    </For>
-                                }
-                                    .into_any()
+        <div class="application-list">
+            <div class="list-header">
+                <span>"Company"</span>
+                <span>"Industry"</span>
+                <span>"Link"</span>
+                <span>"Status"</span>
+                <span></span>
+            </div>
+            <Suspense fallback=|| ()>
+                {move || Suspend::new(async move {
+                    match solicitaties.await {
+                        Ok(data) => {
+                            view! {
+                                <For each=move || data.clone() key=|s| s.id let:solicitatie>
+                                    <ApplicationCard solicitatie />
+                                </For>
                             }
-                            Err(_) => {
-                                view! {
-                                    <tr>
-                                        <td colspan="6">"Error"</td>
-                                    </tr>
-                                }
-                                    .into_any()
-                            }
+                                .into_any()
                         }
-                    })}
-                </Suspense>
-            </tbody>
-        </table>
+                        Err(_) => {
+                            view! {
+                                <div class="error">"Error loading applications"</div>
+                            }
+                                .into_any()
+                        }
+                    }
+                })}
+            </Suspense>
+        </div>
     }
 }
 
 #[component]
-fn SolicitatieRow(solicitatie: AllSolicitatiesRequest) -> impl IntoView {
-    let _solicitaties =
-        expect_context::<Resource<Result<Vec<AllSolicitatiesRequest>, ServerFnError>>>();
+fn ApplicationCard(solicitatie: AllSolicitatiesRequest) -> impl IntoView {
     let delete_action = expect_context::<ServerAction<DeleteSolicitatie>>();
 
     let id = solicitatie.id;
     let status = solicitatie.status;
 
     view! {
-        <tr>
-            <td>{solicitatie.company.name.clone()}</td>
-            <td>{solicitatie.company.industry.clone()}</td>
-            <td>
-                <a href=solicitatie.company.website.clone() target="_blank">
-                    "Visit"
-                </a>
-            </td>
-            <td>
-                <button class=format!(
-                    "status-badge {}",
-                    status.css_class(),
-                )>{status.to_string()}</button>
-            </td>
-            <td>{solicitatie.date.clone()}</td>
-            <td>
-                <ActionForm action=delete_action>
-                    <input type="hidden" name="id" value=id.to_string() />
-                    <input class="btn-delete" type="submit" value="X" />
-                </ActionForm>
-            </td>
-        </tr>
+        <div class="application-card">
+            <span class="card-company">{solicitatie.company.name.clone()}</span>
+            <span class="card-industry">{solicitatie.company.industry.clone()}</span>
+            <a href=solicitatie.company.website.clone() target="_blank" class="card-link">
+                "Visit"
+            </a>
+            <button class=format!("status-badge {}", status.css_class())>
+                {status.to_string()}
+            </button>
+            <ActionForm action=delete_action attr:class="card-delete">
+                <input type="hidden" name="id" value=id.to_string() />
+                <input class="btn-delete" type="submit" value="X" />
+            </ActionForm>
+        </div>
     }
 }
 
