@@ -1,4 +1,100 @@
 body {
-	font-family: sans-serif;
-	text-align: center;
+    font-family: sans-serif;
+    padding: 2rem;
+    background: #f5f5f5;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+.solicitatie-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.solicitatie-table th,
+.solicitatie-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.solicitatie-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #555;
+}
+
+.solicitatie-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.solicitatie-table a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.solicitatie-table a:hover {
+    text-decoration: underline;
+}
+
+/* Status badges */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.2s;
+}
+
+.status-badge:hover {
+    opacity: 0.8;
+}
+
+.status-todo {
+    background: #e0e0e0;
+    color: #555;
+}
+
+.status-solicitated {
+    background: #bbdefb;
+    color: #1565c0;
+}
+
+.status-pending {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.status-accepted {
+    background: #c8e6c9;
+    color: #2e7d32;
+}
+
+.status-rejected {
+    background: #ffcdd2;
+    color: #c62828;
+}
+
+/* Buttons */
+.btn-delete {
+    padding: 0.25rem 0.5rem;
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.btn-delete:hover {
+    background: #ffcdd2;
 }

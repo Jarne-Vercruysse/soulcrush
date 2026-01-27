@@ -17,8 +17,8 @@ tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "0.2.106", optional = true }
 stylance = { version = "0.7", optional = true }
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "migrate", "time"], optional = true }
-time = {version = "0.3", features = ["serde"] ,optional = true}
-uuid = { version = "1", features = ["v4"], optional = true }
+time = {version = "0.3", features = ["serde"]}
+uuid = { version = "1", features = ["v4", "js"] }
 serde = { version = "1", features = ["derive"] }
 dotenvy = { version = "0.15", optional = true }
 
@@ -34,7 +34,6 @@ ssr = [
     "dep:tokio",
     "dep:leptos_axum",
     "dep:sqlx",
-    "dep:uuid",
     "dep:dotenvy",
     "leptos/ssr",
     "leptos_meta/ssr",
