@@ -1,102 +1,146 @@
+/* ══════════════════════════════════════════════════════════════
+   70s DARK CYBERPUNK THEME — OKLCH Edition
+   Mobile-First Approach
+   ══════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   RESET & BASE
+   ══════════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
   /* ─── BASE DARKS ─── */
-  --cyber-void: oklch(8% 0.02 280);
-  --cyber-night: oklch(12% 0.03 270);
-  --cyber-shadow: oklch(18% 0.04 265);
-  --cyber-surface: oklch(22% 0.05 260);
-  --cyber-elevated: oklch(28% 0.04 255);
+  --cyber-void:        oklch(8% 0.02 280);
+  --cyber-night:       oklch(12% 0.03 270);
+  --cyber-shadow:      oklch(18% 0.04 265);
+  --cyber-surface:     oklch(22% 0.05 260);
+  --cyber-elevated:    oklch(28% 0.04 255);
+
   /* ─── 70s NEON ACCENTS ─── */
-  --neon-magenta: oklch(65% 0.28 330);
-  --neon-magenta-dim: oklch(45% 0.20 330);
-  --neon-cyan: oklch(75% 0.15 195);
-  --neon-cyan-dim: oklch(55% 0.12 195);
-  --neon-orange: oklch(70% 0.22 50);
-  --neon-orange-dim: oklch(50% 0.18 50);
-  --neon-gold: oklch(78% 0.16 85);
-  --neon-violet: oklch(55% 0.25 300);
+  --neon-magenta:      oklch(65% 0.28 330);
+  --neon-magenta-dim:  oklch(45% 0.20 330);
+  --neon-cyan:         oklch(75% 0.15 195);
+  --neon-cyan-dim:     oklch(55% 0.12 195);
+  --neon-orange:       oklch(70% 0.22 50);
+  --neon-orange-dim:   oklch(50% 0.18 50);
+  --neon-gold:         oklch(78% 0.16 85);
+  --neon-violet:       oklch(55% 0.25 300);
+
   /* ─── TEXT HIERARCHY ─── */
-  --text-primary: oklch(92% 0.02 280);
-  --text-secondary: oklch(70% 0.04 275);
-  --text-muted: oklch(50% 0.05 270);
-  --text-glow: oklch(85% 0.12 330);
+  --text-primary:      oklch(92% 0.02 280);
+  --text-secondary:    oklch(70% 0.04 275);
+  --text-muted:        oklch(50% 0.05 270);
+  --text-glow:         oklch(85% 0.12 330);
+
   /* ─── FUNCTIONAL COLORS ─── */
-  --success: oklch(70% 0.18 155);
-  --warning: oklch(75% 0.20 70);
-  --error: oklch(60% 0.25 25);
-  --info: oklch(70% 0.15 230);
+  --success:           oklch(70% 0.18 155);
+  --warning:           oklch(75% 0.20 70);
+  --error:             oklch(60% 0.25 25);
+  --info:              oklch(70% 0.15 230);
+
   /* ─── GRADIENTS & EFFECTS ─── */
-  --gradient-sunset: linear-gradient(135deg,
-      oklch(60% 0.25 25) 0%,
-      oklch(55% 0.28 330) 50%,
-      oklch(50% 0.25 300) 100%);
-  --gradient-horizon: linear-gradient(180deg,
-      oklch(12% 0.03 270) 0%,
-      oklch(20% 0.08 300) 50%,
-      oklch(15% 0.05 330) 100%);
-  --gradient-chrome: linear-gradient(90deg,
-      oklch(70% 0.22 50) 0%,
-      oklch(78% 0.16 85) 50%,
-      oklch(70% 0.22 50) 100%);
+  --gradient-sunset:   linear-gradient(135deg, 
+                         oklch(60% 0.25 25) 0%, 
+                         oklch(55% 0.28 330) 50%, 
+                         oklch(50% 0.25 300) 100%);
+  --gradient-horizon:  linear-gradient(180deg,
+                         oklch(12% 0.03 270) 0%,
+                         oklch(20% 0.08 300) 50%,
+                         oklch(15% 0.05 330) 100%);
+  --gradient-chrome:   linear-gradient(90deg,
+                         oklch(70% 0.22 50) 0%,
+                         oklch(78% 0.16 85) 50%,
+                         oklch(70% 0.22 50) 100%);
+
   /* ─── GLOW & SHADOW ─── */
-  --glow-magenta: 0 0 20px oklch(65% 0.28 330 / 0.6),
-    0 0 40px oklch(65% 0.28 330 / 0.3);
-  --glow-cyan: 0 0 20px oklch(75% 0.15 195 / 0.6),
-    0 0 40px oklch(75% 0.15 195 / 0.3);
-  --glow-orange: 0 0 20px oklch(70% 0.22 50 / 0.6),
-    0 0 40px oklch(70% 0.22 50 / 0.3);
-  --shadow-deep: 0 8px 32px oklch(0% 0 0 / 0.5),
-    0 2px 8px oklch(0% 0 0 / 0.3);
+  --glow-magenta:      0 0 20px oklch(65% 0.28 330 / 0.6),
+                       0 0 40px oklch(65% 0.28 330 / 0.3);
+  --glow-cyan:         0 0 20px oklch(75% 0.15 195 / 0.6),
+                       0 0 40px oklch(75% 0.15 195 / 0.3);
+  --glow-orange:       0 0 20px oklch(70% 0.22 50 / 0.6),
+                       0 0 40px oklch(70% 0.22 50 / 0.3);
+  --shadow-deep:       0 8px 32px oklch(0% 0 0 / 0.5),
+                       0 2px 8px oklch(0% 0 0 / 0.3);
+
   /* ─── TYPOGRAPHY ─── */
-  --font-display: 'Orbitron', 'Audiowide', system-ui, sans-serif;
-  --font-body: 'IBM Plex Mono', 'Fira Code', monospace;
-  --font-accent: 'Russo One', 'Bebas Neue', sans-serif;
+  --font-display:      'Orbitron', 'Audiowide', system-ui, sans-serif;
+  --font-body:         'IBM Plex Mono', 'Fira Code', monospace;
+  --font-accent:       'Russo One', 'Bebas Neue', sans-serif;
+
   /* ─── BORDERS & LINES ─── */
-  --border-subtle: 1px solid oklch(30% 0.05 280 / 0.5);
-  --border-glow: 1px solid oklch(65% 0.28 330 / 0.8);
-  --scanline-opacity: 0.03;
+  --border-subtle:     1px solid oklch(30% 0.05 280 / 0.5);
+  --border-glow:       1px solid oklch(65% 0.28 330 / 0.8);
+  --scanline-opacity:  0.03;
+
   /* ─── SPACING ─── */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 2rem;
-  --space-xl: 4rem;
+  --space-xs:  0.25rem;
+  --space-sm:  0.5rem;
+  --space-md:  1rem;
+  --space-lg:  2rem;
+  --space-xl:  4rem;
+
   /* ─── TRANSITIONS ─── */
-  --transition-fast: 150ms ease-out;
+  --transition-fast:   150ms ease-out;
   --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-glow: 500ms ease-in-out;
+  --transition-glow:   500ms ease-in-out;
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BASE STYLES
+   BASE STYLES (MOBILE)
    ══════════════════════════════════════════════════════════════ */
+
 body {
+  margin: 0;
   background: var(--cyber-void);
   color: var(--text-primary);
   font-family: var(--font-body);
   line-height: 1.6;
   min-height: 100vh;
-  padding: var(--space-lg);
 
   &::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: repeating-linear-gradient(0deg,
-        oklch(0% 0 0 / var(--scanline-opacity)) 0px,
-        oklch(0% 0 0 / var(--scanline-opacity)) 1px,
-        transparent 1px,
-        transparent 3px);
+    background: repeating-linear-gradient(
+      0deg,
+      oklch(0% 0 0 / var(--scanline-opacity)) 0px,
+      oklch(0% 0 0 / var(--scanline-opacity)) 1px,
+      transparent 1px,
+      transparent 3px
+    );
     pointer-events: none;
     z-index: 9999;
   }
 }
 
 /* ══════════════════════════════════════════════════════════════
+   CONTAINER
+   ══════════════════════════════════════════════════════════════ */
+
+.container {
+  max-width: 80rem;
+  padding-inline: var(--space-md);
+  padding-block: var(--space-md);
+  margin: auto;
+
+  @media (min-width: 600px) {
+    padding-inline: var(--space-lg);
+    padding-block: var(--space-lg);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    TYPOGRAPHY
    ══════════════════════════════════════════════════════════════ */
+
 h1 {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 4rem);
+  font-size: clamp(1.5rem, 5vw, 4rem);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -104,19 +148,28 @@ h1 {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: var(--space-lg);
+  margin: 0 0 var(--space-md);
+
+  @media (min-width: 600px) {
+    margin-bottom: var(--space-lg);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
    COLLAPSIBLE FORM CONTAINER
    ══════════════════════════════════════════════════════════════ */
+
 .create-form-container {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
   background: var(--cyber-surface);
   border: var(--border-subtle);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: var(--shadow-deep);
+
+  @media (min-width: 600px) {
+    margin-bottom: var(--space-lg);
+  }
 }
 
 .form-toggle {
@@ -124,17 +177,22 @@ h1 {
   align-items: center;
   gap: var(--space-sm);
   width: 100%;
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
   background: transparent;
   border: none;
   border-bottom: var(--border-subtle);
   color: var(--neon-cyan);
   font-family: var(--font-display);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;
   transition: var(--transition-smooth);
+
+  @media (min-width: 600px) {
+    padding: var(--space-md) var(--space-lg);
+    font-size: 0.9rem;
+  }
 
   &:hover {
     background: var(--cyber-elevated);
@@ -148,7 +206,7 @@ h1 {
   & .toggle-icon {
     transition: var(--transition-smooth);
     font-size: 0.7rem;
-
+    
     &.open {
       transform: rotate(90deg);
     }
@@ -159,17 +217,23 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  padding: var(--space-lg);
+  padding: var(--space-md);
   background: transparent;
   border: none;
+
+  @media (min-width: 600px) {
+    padding: var(--space-lg);
+  }
 }
 
 .form-row {
   display: flex;
-  gap: var(--space-lg);
+  flex-direction: column;
+  gap: var(--space-md);
 
-  @media (max-width: 600px) {
-    flex-direction: column;
+  @media (min-width: 600px) {
+    flex-direction: row;
+    gap: var(--space-lg);
   }
 }
 
@@ -180,22 +244,31 @@ h1 {
   flex: 1;
 
   & label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-family: var(--font-display);
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--text-secondary);
+
+    @media (min-width: 600px) {
+      font-size: 0.75rem;
+    }
   }
 
   & input,
   & select {
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-sm);
     background: var(--cyber-shadow);
     border: var(--border-subtle);
     border-radius: 4px;
     color: var(--text-primary);
     font-family: var(--font-body);
+    font-size: 1rem;
     transition: var(--transition-smooth);
+
+    @media (min-width: 600px) {
+      padding: var(--space-sm) var(--space-md);
+    }
 
     &:focus {
       outline: none;
@@ -210,16 +283,27 @@ h1 {
 }
 
 .form-actions {
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: stretch;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    align-items: flex-end;
+  }
 
   & .btn-submit {
-    height: fit-content;
+    width: 100%;
+
+    @media (min-width: 600px) {
+      width: auto;
+    }
   }
 }
 
 /* ══════════════════════════════════════════════════════════════
    TABLE — SOLICITATIE
    ══════════════════════════════════════════════════════════════ */
+
 .solicitatie-table {
   width: 100%;
   border-collapse: collapse;
@@ -228,22 +312,35 @@ h1 {
   border-radius: 8px;
   overflow: hidden;
   border: var(--border-subtle);
+  font-size: 0.85rem;
+
+  @media (min-width: 600px) {
+    font-size: 1rem;
+  }
 
   & th,
   & td {
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-sm);
     text-align: left;
     border-bottom: var(--border-subtle);
+
+    @media (min-width: 600px) {
+      padding: var(--space-sm) var(--space-md);
+    }
   }
 
   & th {
     background: var(--cyber-shadow);
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-secondary);
+
+    @media (min-width: 600px) {
+      font-size: 0.75rem;
+    }
   }
 
   & tbody tr {
@@ -269,17 +366,22 @@ h1 {
 /* ══════════════════════════════════════════════════════════════
    STATUS BADGES
    ══════════════════════════════════════════════════════════════ */
+
 .status-badge {
   padding: var(--space-xs) var(--space-sm);
   border-radius: 4px;
   border: none;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-family: var(--font-display);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;
   font-weight: 500;
   transition: var(--transition-smooth);
+
+  @media (min-width: 600px) {
+    font-size: 0.75rem;
+  }
 
   &:hover {
     transform: scale(1.05);
@@ -316,6 +418,7 @@ h1 {
 /* ══════════════════════════════════════════════════════════════
    BUTTONS
    ══════════════════════════════════════════════════════════════ */
+
 .btn-delete {
   padding: var(--space-xs) var(--space-sm);
   background: transparent;
@@ -323,9 +426,13 @@ h1 {
   border: 1px solid var(--error);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-family: var(--font-body);
   transition: var(--transition-smooth);
+
+  @media (min-width: 600px) {
+    font-size: 0.75rem;
+  }
 
   &:hover {
     background: var(--error);
@@ -342,10 +449,14 @@ h1 {
   border-radius: 4px;
   cursor: pointer;
   font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   transition: var(--transition-smooth);
+
+  @media (min-width: 600px) {
+    font-size: 0.85rem;
+  }
 
   &:hover {
     box-shadow: var(--glow-magenta);
