@@ -6,7 +6,7 @@ CREATE TABLE companies (
     industry TEXT NOT NULL
 );
 
-CREATE TABLE solicitaties (
+CREATE TABLE applications (
     id TEXT PRIMARY KEY NOT NULL,
     company_id TEXT NOT NULL,
     status TEXT NOT NULL,

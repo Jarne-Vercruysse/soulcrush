@@ -53,100 +53,60 @@ pub fn App() -> impl IntoView {
 }
 
 #[server]
-async fn get_all_solicitaties() -> Result<Vec<AllSolicitatiesRequest>, ServerFnError> {
-    let result = mock_data()
-        .iter()
-        .map(|sol| AllSolicitatiesRequest::from(sol.clone()))
-        .collect();
-
-    Ok(result)
+async fn get_all_applications() -> Result<Vec<AllApplicationsResponse>, ServerFnError> {
+    unimplemented!();
 }
 
 #[server]
-async fn delete_solicitatie(id: Uuid) -> Result<(), ServerFnError> {
+async fn delete_application(id: Uuid) -> Result<(), ServerFnError> {
     println!("Delete with id: {id}");
 
     Ok(())
 }
 
 #[server]
-async fn create_application(req: CreateSolicitatieRequest) -> Result<(), ServerFnError> {
-    println!("add solicitatie");
+async fn create_application(req: CreateApplicationRequest) -> Result<(), ServerFnError> {
+    use sqlx::SqlitePool;
+
+    let pool = expect_context::<SqlitePool>();
+    let company = Company::new(
+        req.company.name,
+        req.company.website,
+        req.company.ceo,
+        req.company.industry,
+    );
+
+    let application = Application::new(&company);
+
+    let mut tx = pool.begin().await?;
+
+    sqlx::query("INSERT INTO companies (id, name, website, ceo, industry) VALUES (?, ?, ?, ?, ?)")
+        .bind(company.id.to_string())
+        .bind(company.name)
+        .bind(company.website)
+        .bind(company.ceo)
+        .bind(company.industry)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query("INSERT INTO applications (id, company_id, status, date) VALUES (?, ?, ?, ?)")
+        .bind(application.id.to_string())
+        .bind(company.id.to_string())
+        .bind(format!("{:?}", req.status))
+        .bind(application.date.to_string())
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
 
     Ok(())
-}
-
-#[cfg(feature = "ssr")]
-fn mock_data() -> Vec<Solicitatie> {
-    vec![
-        Solicitatie::new(Company::new(
-            "Acme Corp".into(),
-            "https://acme.com".into(),
-            "John Doe".into(),
-            "Technology".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "TechStart".into(),
-            "https://techstart.io".into(),
-            "Jane Smith".into(),
-            "Startup".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "BigBank".into(),
-            "https://bigbank.com".into(),
-            "Bob Wilson".into(),
-            "Finance".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "CloudNine".into(),
-            "https://cloudnine.dev".into(),
-            "Alice Chen".into(),
-            "Cloud Services".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "DataFlow".into(),
-            "https://dataflow.io".into(),
-            "Mike Johnson".into(),
-            "Data Analytics".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "GreenEnergy".into(),
-            "https://greenenergy.nl".into(),
-            "Eva de Vries".into(),
-            "Renewable Energy".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "HealthTech".into(),
-            "https://healthtech.com".into(),
-            "Dr. Sarah Lee".into(),
-            "Healthcare".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "LogiSmart".into(),
-            "https://logismart.eu".into(),
-            "Peter Bakker".into(),
-            "Logistics".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "MediaWave".into(),
-            "https://mediawave.tv".into(),
-            "Lisa Martinez".into(),
-            "Media".into(),
-        )),
-        Solicitatie::new(Company::new(
-            "SecureNet".into(),
-            "https://securenet.io".into(),
-            "Tom Anderson".into(),
-            "Cybersecurity".into(),
-        )),
-    ]
 }
 
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    provide_context(Resource::new(|| (), |_| get_all_solicitaties()));
-    provide_context(ServerAction::<DeleteSolicitatie>::new());
+    provide_context(Resource::new(|| (), |_| get_all_applications()));
+    provide_context(ServerAction::<DeleteApplication>::new());
     provide_context(ServerMultiAction::<CreateApplication>::new());
 
     view! {
@@ -159,8 +119,8 @@ fn HomePage() -> impl IntoView {
 
 #[component]
 fn ApplicationList() -> impl IntoView {
-    let solicitaties =
-        expect_context::<Resource<Result<Vec<AllSolicitatiesRequest>, ServerFnError>>>();
+    let applications =
+        expect_context::<Resource<Result<Vec<AllApplicationsResponse>, ServerFnError>>>();
 
     view! {
         <CreateApplicationForm />
@@ -174,11 +134,11 @@ fn ApplicationList() -> impl IntoView {
             </div>
             <Suspense fallback=|| ()>
                 {move || Suspend::new(async move {
-                    match solicitaties.await {
+                    match applications.await {
                         Ok(data) => {
                             view! {
-                                <For each=move || data.clone() key=|s| s.id let:solicitatie>
-                                    <ApplicationCard solicitatie />
+                                <For each=move || data.clone() key=|s| s.id let:application>
+                                    <ApplicationCard application />
                                 </For>
                             }
                                 .into_any()
@@ -197,17 +157,17 @@ fn ApplicationList() -> impl IntoView {
 }
 
 #[component]
-fn ApplicationCard(solicitatie: AllSolicitatiesRequest) -> impl IntoView {
-    let delete_action = expect_context::<ServerAction<DeleteSolicitatie>>();
+fn ApplicationCard(application: AllApplicationsResponse) -> impl IntoView {
+    let delete_action = expect_context::<ServerAction<DeleteApplication>>();
 
-    let id = solicitatie.id;
-    let status = solicitatie.status;
+    let id = application.id;
+    let status = application.status;
 
     view! {
         <div class="application-card">
-            <span class="card-company">{solicitatie.company.name.clone()}</span>
-            <span class="card-industry">{solicitatie.company.industry.clone()}</span>
-            <a href=solicitatie.company.website.clone() target="_blank" class="card-link">
+            <span class="card-company">{application.company.name.clone()}</span>
+            <span class="card-industry">{application.company.industry.clone()}</span>
+            <a href=application.company.website.clone() target="_blank" class="card-link">
                 "Visit"
             </a>
             <button class=format!("status-badge {}", status.css_class())>
@@ -279,8 +239,8 @@ fn CreateApplicationForm() -> impl IntoView {
     }
 }
 
-impl From<Solicitatie> for AllSolicitatiesRequest {
-    fn from(s: Solicitatie) -> Self {
+impl From<Application> for AllApplicationsResponse {
+    fn from(s: Application) -> Self {
         Self {
             id: s.id,
             company: s.company,
@@ -291,7 +251,7 @@ impl From<Solicitatie> for AllSolicitatiesRequest {
 }
 
 #[derive(Clone, PartialEq, Deserialize, Serialize)]
-struct AllSolicitatiesRequest {
+struct AllApplicationsResponse {
     id: Uuid,
     company: Company,
     status: Status,
@@ -299,7 +259,7 @@ struct AllSolicitatiesRequest {
 }
 
 #[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
-struct CreateSolicitatieRequest {
+struct CreateApplicationRequest {
     company: CreateCompanyRequest,
     status: Status,
 }
@@ -313,7 +273,7 @@ struct CreateCompanyRequest {
 }
 
 #[derive(Clone, PartialEq)]
-struct Solicitatie {
+struct Application {
     id: Uuid,
     company: Company,
     status: Status,
@@ -373,17 +333,13 @@ impl Status {
     }
 }
 
-impl Solicitatie {
-    pub fn new(company: Company) -> Self {
-        let id = Uuid::new_v4();
-        let status = Status::default();
-        let date = OffsetDateTime::now_utc();
-
+impl Application {
+    pub fn new(company: &Company) -> Self {
         Self {
-            id,
-            company,
-            status,
-            date,
+            id: Uuid::new_v4(),
+            company: company.clone(),
+            status: Status::default(),
+            date: OffsetDateTime::now_utc(),
         }
     }
 }

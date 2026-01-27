@@ -1,2 +1,2 @@
-DROP TABLE solicitaties;
+DROP TABLE applications;
 DROP TABLE companies;
