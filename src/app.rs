@@ -5,6 +5,7 @@ use leptos_router::{
     StaticSegment,
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ssr")]
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -53,18 +54,46 @@ pub fn App() -> impl IntoView {
 }
 
 #[server]
+#[cfg_attr(feature = "ssr", tracing::instrument(ret, err))]
 async fn get_all_applications() -> Result<Vec<AllApplicationsResponse>, ServerFnError> {
-    unimplemented!();
+    use sqlx::SqlitePool;
+
+    let pool = expect_context::<SqlitePool>();
+
+    let rows: Vec<ApplicationRow> = sqlx::query_as(
+        r#"
+        SELECT a.id, a.status, a.date,
+               c.id as company_id, c.name, c.website, c.ceo, c.industry
+        FROM applications a
+        JOIN companies c ON a.company_id = c.id
+        ORDER BY a.date DESC
+        "#,
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Failed to fetch applications: {e}")))?;
+
+    rows.into_iter().map(TryFrom::try_from).collect()
 }
 
 #[server]
+#[cfg_attr(feature = "ssr", tracing::instrument(ret, err, fields(application_id = %id)))]
 async fn delete_application(id: Uuid) -> Result<(), ServerFnError> {
-    println!("Delete with id: {id}");
+    tracing::info!("deleting application");
+
+    use sqlx::SqlitePool;
+    let pool = expect_context::<SqlitePool>();
+
+    sqlx::query("DELETE FROM applications WHERE id = ?")
+        .bind(id.to_string())
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
 
 #[server]
+#[cfg_attr(feature = "ssr", tracing::instrument(ret, err, skip(req), fields(company = %req.company.name)))]
 async fn create_application(req: CreateApplicationRequest) -> Result<(), ServerFnError> {
     use sqlx::SqlitePool;
 
@@ -105,9 +134,15 @@ async fn create_application(req: CreateApplicationRequest) -> Result<(), ServerF
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    provide_context(Resource::new(|| (), |_| get_all_applications()));
-    provide_context(ServerAction::<DeleteApplication>::new());
-    provide_context(ServerMultiAction::<CreateApplication>::new());
+    let delete = ServerAction::<DeleteApplication>::new();
+    let create = ServerMultiAction::<CreateApplication>::new();
+
+    provide_context(Resource::new(
+        move || (delete.version().get(), create.version().get()),
+        |_| get_all_applications(),
+    ));
+    provide_context(create);
+    provide_context(delete);
 
     view! {
         <h1>"Job Applications"</h1>
@@ -198,30 +233,30 @@ fn CreateApplicationForm() -> impl IntoView {
                 <MultiActionForm action=create_action attr:class="create-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="name">"Company Name"</label>
-                            <input type="text" name="name" required />
+                            <label for="req[company][name]">"Company Name"</label>
+                            <input type="text" name="req[company][name]" required />
                         </div>
                         <div class="form-group">
-                            <label for="website">"Website"</label>
-                            <input type="url" name="website" required />
+                            <label for="req[company][website]">"Website"</label>
+                            <input type="url" name="req[company][website]" required />
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="ceo">"CEO"</label>
-                            <input type="text" name="ceo" required />
+                            <label for="req[company][ceo]">"CEO"</label>
+                            <input type="text" name="req[company][ceo]" required />
                         </div>
                         <div class="form-group">
-                            <label for="industry">"Industry"</label>
-                            <input type="text" name="industry" required />
+                            <label for="req[company][industry]">"Industry"</label>
+                            <input type="text" name="req[company][industry]" required />
                         </div>
                     </div>
 
                     <div class="form-row form-actions">
                         <div class="form-group">
-                            <label for="status">"Status"</label>
-                            <select name="status">
+                            <label for="req[status]">"Status"</label>
+                            <select name="req[status]">
                                 <option value="ToDo">"To Do"</option>
                                 <option value="Solicitated">"Applied"</option>
                                 <option value="Pending">"Pending"</option>
@@ -239,6 +274,7 @@ fn CreateApplicationForm() -> impl IntoView {
     }
 }
 
+#[cfg(feature = "ssr")]
 impl From<Application> for AllApplicationsResponse {
     fn from(s: Application) -> Self {
         Self {
@@ -250,7 +286,44 @@ impl From<Application> for AllApplicationsResponse {
     }
 }
 
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[cfg(feature = "ssr")]
+#[derive(sqlx::FromRow)]
+struct ApplicationRow {
+    id: String,
+    status: String,
+    date: String,
+    company_id: String,
+    name: String,
+    website: String,
+    ceo: String,
+    industry: String,
+}
+
+#[cfg(feature = "ssr")]
+impl TryFrom<ApplicationRow> for AllApplicationsResponse {
+    type Error = ServerFnError;
+
+    fn try_from(r: ApplicationRow) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: Uuid::parse_str(&r.id).map_err(|e| ServerFnError::new(e.to_string()))?,
+            status: r
+                .status
+                .parse()
+                .map_err(|e: String| ServerFnError::new(e))?,
+            date: r.date,
+            company: Company {
+                id: Uuid::parse_str(&r.company_id)
+                    .map_err(|e| ServerFnError::new(e.to_string()))?,
+                name: r.name,
+                website: r.website,
+                ceo: r.ceo,
+                industry: r.industry,
+            },
+        })
+    }
+}
+
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 struct AllApplicationsResponse {
     id: Uuid,
     company: Company,
@@ -272,6 +345,7 @@ struct CreateCompanyRequest {
     industry: String,
 }
 
+#[cfg(feature = "ssr")]
 #[derive(Clone, PartialEq)]
 struct Application {
     id: Uuid,
@@ -280,7 +354,7 @@ struct Application {
     date: OffsetDateTime,
 }
 
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 struct Company {
     id: Uuid,
     name: String,
@@ -311,6 +385,21 @@ impl std::fmt::Display for Status {
     }
 }
 
+impl std::str::FromStr for Status {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ToDo" => Ok(Status::ToDo),
+            "Solicitated" => Ok(Status::Solicitated),
+            "Pending" => Ok(Status::Pending),
+            "Accepted" => Ok(Status::Accepted),
+            "Rejected" => Ok(Status::Rejected),
+            _ => Err(format!("Invalid status: {s}")),
+        }
+    }
+}
+
 impl Status {
     fn next(self) -> Self {
         match self {
@@ -333,6 +422,7 @@ impl Status {
     }
 }
 
+#[cfg(feature = "ssr")]
 impl Application {
     pub fn new(company: &Company) -> Self {
         Self {
@@ -344,6 +434,7 @@ impl Application {
     }
 }
 
+#[cfg(feature = "ssr")]
 impl Company {
     pub fn new(name: String, website: String, ceo: String, industry: String) -> Self {
         let id = Uuid::new_v4();
