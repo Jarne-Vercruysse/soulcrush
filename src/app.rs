@@ -1,4 +1,4 @@
-use leptos::prelude::*;
+use leptos::{prelude::*, web_sys};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
@@ -88,6 +88,20 @@ async fn delete_application(id: Uuid) -> Result<(), ServerFnError> {
 }
 
 #[server]
+#[cfg_attr(feature = "ssr", tracing::instrument(ret, err, fields(application_id = %id, new_status = %status.as_str())))]
+async fn update_application_status(id: Uuid, status: Status) -> Result<(), ServerFnError> {
+    let pool = expect_context::<SqlitePool>();
+
+    sqlx::query("UPDATE applications SET status = ? WHERE id = ?")
+        .bind(status.as_str())
+        .bind(id.to_string())
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+#[server]
 #[cfg_attr(feature = "ssr", tracing::instrument(ret, err, skip(req), fields(company = %req.company.name)))]
 async fn create_application(req: CreateApplicationRequest) -> Result<(), ServerFnError> {
     let pool = expect_context::<SqlitePool>();
@@ -136,13 +150,21 @@ async fn insert_application(
 fn HomePage() -> impl IntoView {
     let delete = ServerAction::<DeleteApplication>::new();
     let create = ServerMultiAction::<CreateApplication>::new();
+    let update_status = ServerAction::<UpdateApplicationStatus>::new();
 
     provide_context(Resource::new(
-        move || (delete.version().get(), create.version().get()),
+        move || {
+            (
+                delete.version().get(),
+                create.version().get(),
+                update_status.version().get(),
+            )
+        },
         |_| get_all_applications(),
     ));
     provide_context(create);
     provide_context(delete);
+    provide_context(update_status);
 
     view! {
         <h1>"Job Applications"</h1>
@@ -194,9 +216,18 @@ fn ApplicationList() -> impl IntoView {
 #[component]
 fn ApplicationCard(application: AllApplicationsResponse) -> impl IntoView {
     let delete_action = expect_context::<ServerAction<DeleteApplication>>();
+    let update_status_action = expect_context::<ServerAction<UpdateApplicationStatus>>();
 
     let id = application.id;
-    let status = application.status;
+    let status = RwSignal::new(application.status);
+
+    let on_status_change = move |ev: web_sys::Event| {
+        let target = event_target::<web_sys::HtmlSelectElement>(&ev);
+        if let Ok(new_status) = target.value().parse::<Status>() {
+            status.set(new_status);
+            update_status_action.dispatch(UpdateApplicationStatus { id, status: new_status });
+        }
+    };
 
     view! {
         <div class="application-card">
@@ -205,9 +236,16 @@ fn ApplicationCard(application: AllApplicationsResponse) -> impl IntoView {
             <a href=application.company.website.clone() target="_blank" class="card-link">
                 "Visit"
             </a>
-            <button class=format!("status-badge {}", status.css_class())>
-                {status.to_string()}
-            </button>
+            <select
+                class=move || format!("status-select {}", status.get().css_class())
+                on:change=on_status_change
+            >
+                <option value="ToDo" selected=move || status.get() == Status::ToDo>"To Do"</option>
+                <option value="Solicitated" selected=move || status.get() == Status::Solicitated>"Applied"</option>
+                <option value="Pending" selected=move || status.get() == Status::Pending>"Pending"</option>
+                <option value="Accepted" selected=move || status.get() == Status::Accepted>"Accepted"</option>
+                <option value="Rejected" selected=move || status.get() == Status::Rejected>"Rejected"</option>
+            </select>
             <ActionForm action=delete_action attr:class="card-delete">
                 <input type="hidden" name="id" value=id.to_string() />
                 <input class="btn-delete" type="submit" value="X" />
@@ -408,16 +446,6 @@ impl Status {
             Status::Pending => "Pending",
             Status::Accepted => "Accepted",
             Status::Rejected => "Rejected",
-        }
-    }
-
-    fn next(self) -> Self {
-        match self {
-            Status::ToDo => Status::Solicitated,
-            Status::Solicitated => Status::Pending,
-            Status::Pending => Status::Accepted,
-            Status::Accepted => Status::Rejected,
-            Status::Rejected => Status::ToDo,
         }
     }
 
