@@ -1,12 +1,13 @@
-use leptos::prelude::*;
+use leptos::{prelude::*, web_sys};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
     StaticSegment,
 };
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 use uuid::Uuid;
+#[cfg(feature = "ssr")]
+use {sqlx::SqlitePool, time::OffsetDateTime};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -53,61 +54,117 @@ pub fn App() -> impl IntoView {
 }
 
 #[server]
+#[cfg_attr(feature = "ssr", tracing::instrument(ret, err))]
 async fn get_all_applications() -> Result<Vec<AllApplicationsResponse>, ServerFnError> {
-    unimplemented!();
+    let pool = expect_context::<SqlitePool>();
+
+    let rows: Vec<ApplicationRow> = sqlx::query_as(
+        r#"
+        SELECT a.id, a.status, a.date,
+               c.id as company_id, c.name, c.website, c.ceo, c.industry
+        FROM applications a
+        JOIN companies c ON a.company_id = c.id
+        ORDER BY a.date DESC
+        "#,
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Failed to fetch applications: {e}")))?;
+
+    rows.into_iter().map(TryFrom::try_from).collect()
 }
 
 #[server]
+#[cfg_attr(feature = "ssr", tracing::instrument(ret, err, fields(application_id = %id)))]
 async fn delete_application(id: Uuid) -> Result<(), ServerFnError> {
-    println!("Delete with id: {id}");
+    let pool = expect_context::<SqlitePool>();
+
+    sqlx::query("DELETE FROM applications WHERE id = ?")
+        .bind(id.to_string())
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
 
 #[server]
-async fn create_application(req: CreateApplicationRequest) -> Result<(), ServerFnError> {
-    use sqlx::SqlitePool;
-
+#[cfg_attr(feature = "ssr", tracing::instrument(ret, err, fields(application_id = %id, new_status = %status.as_str())))]
+async fn update_application_status(id: Uuid, status: Status) -> Result<(), ServerFnError> {
     let pool = expect_context::<SqlitePool>();
+
+    sqlx::query("UPDATE applications SET status = ? WHERE id = ?")
+        .bind(status.as_str())
+        .bind(id.to_string())
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+#[server]
+#[cfg_attr(feature = "ssr", tracing::instrument(ret, err, skip(req), fields(company = %req.company.name)))]
+async fn create_application(req: CreateApplicationRequest) -> Result<(), ServerFnError> {
+    let pool = expect_context::<SqlitePool>();
+
     let company = Company::new(
         req.company.name,
         req.company.website,
         req.company.ceo,
         req.company.industry,
     );
+    let application = Application::new(&company, req.status);
 
-    let application = Application::new(&company);
+    insert_application(&pool, &application).await
+}
 
+#[cfg(feature = "ssr")]
+async fn insert_application(
+    pool: &SqlitePool,
+    application: &Application,
+) -> Result<(), ServerFnError> {
     let mut tx = pool.begin().await?;
 
     sqlx::query("INSERT INTO companies (id, name, website, ceo, industry) VALUES (?, ?, ?, ?, ?)")
-        .bind(company.id.to_string())
-        .bind(company.name)
-        .bind(company.website)
-        .bind(company.ceo)
-        .bind(company.industry)
+        .bind(application.company.id.to_string())
+        .bind(&application.company.name)
+        .bind(&application.company.website)
+        .bind(&application.company.ceo)
+        .bind(&application.company.industry)
         .execute(&mut *tx)
         .await?;
 
     sqlx::query("INSERT INTO applications (id, company_id, status, date) VALUES (?, ?, ?, ?)")
         .bind(application.id.to_string())
-        .bind(company.id.to_string())
-        .bind(format!("{:?}", req.status))
+        .bind(application.company.id.to_string())
+        .bind(application.status.as_str())
         .bind(application.date.to_string())
         .execute(&mut *tx)
         .await?;
 
     tx.commit().await?;
-
     Ok(())
 }
 
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    provide_context(Resource::new(|| (), |_| get_all_applications()));
-    provide_context(ServerAction::<DeleteApplication>::new());
-    provide_context(ServerMultiAction::<CreateApplication>::new());
+    let delete = ServerAction::<DeleteApplication>::new();
+    let create = ServerMultiAction::<CreateApplication>::new();
+    let update_status = ServerAction::<UpdateApplicationStatus>::new();
+
+    provide_context(Resource::new(
+        move || {
+            (
+                delete.version().get(),
+                create.version().get(),
+                update_status.version().get(),
+            )
+        },
+        |_| get_all_applications(),
+    ));
+    provide_context(create);
+    provide_context(delete);
+    provide_context(update_status);
 
     view! {
         <h1>"Job Applications"</h1>
@@ -159,9 +216,21 @@ fn ApplicationList() -> impl IntoView {
 #[component]
 fn ApplicationCard(application: AllApplicationsResponse) -> impl IntoView {
     let delete_action = expect_context::<ServerAction<DeleteApplication>>();
+    let update_status_action = expect_context::<ServerAction<UpdateApplicationStatus>>();
 
     let id = application.id;
-    let status = application.status;
+    let status = RwSignal::new(application.status);
+
+    let on_status_change = move |ev: web_sys::Event| {
+        let target = event_target::<web_sys::HtmlSelectElement>(&ev);
+        if let Ok(new_status) = target.value().parse::<Status>() {
+            status.set(new_status);
+            update_status_action.dispatch(UpdateApplicationStatus {
+                id,
+                status: new_status,
+            });
+        }
+    };
 
     view! {
         <div class="application-card">
@@ -170,9 +239,16 @@ fn ApplicationCard(application: AllApplicationsResponse) -> impl IntoView {
             <a href=application.company.website.clone() target="_blank" class="card-link">
                 "Visit"
             </a>
-            <button class=format!("status-badge {}", status.css_class())>
-                {status.to_string()}
-            </button>
+            <select
+                class=move || format!("status-select {}", status.get().css_class())
+                on:change=on_status_change
+            >
+                <option value="ToDo" selected=move || status.get() == Status::ToDo>"To Do"</option>
+                <option value="Solicitated" selected=move || status.get() == Status::Solicitated>"Applied"</option>
+                <option value="Pending" selected=move || status.get() == Status::Pending>"Pending"</option>
+                <option value="Accepted" selected=move || status.get() == Status::Accepted>"Accepted"</option>
+                <option value="Rejected" selected=move || status.get() == Status::Rejected>"Rejected"</option>
+            </select>
             <ActionForm action=delete_action attr:class="card-delete">
                 <input type="hidden" name="id" value=id.to_string() />
                 <input class="btn-delete" type="submit" value="X" />
@@ -198,30 +274,30 @@ fn CreateApplicationForm() -> impl IntoView {
                 <MultiActionForm action=create_action attr:class="create-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="name">"Company Name"</label>
-                            <input type="text" name="name" required />
+                            <label for="req[company][name]">"Company Name"</label>
+                            <input type="text" name="req[company][name]" required />
                         </div>
                         <div class="form-group">
-                            <label for="website">"Website"</label>
-                            <input type="url" name="website" required />
+                            <label for="req[company][website]">"Website"</label>
+                            <input type="url" name="req[company][website]" required />
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="ceo">"CEO"</label>
-                            <input type="text" name="ceo" required />
+                            <label for="req[company][ceo]">"CEO"</label>
+                            <input type="text" name="req[company][ceo]" required />
                         </div>
                         <div class="form-group">
-                            <label for="industry">"Industry"</label>
-                            <input type="text" name="industry" required />
+                            <label for="req[company][industry]">"Industry"</label>
+                            <input type="text" name="req[company][industry]" required />
                         </div>
                     </div>
 
                     <div class="form-row form-actions">
                         <div class="form-group">
-                            <label for="status">"Status"</label>
-                            <select name="status">
+                            <label for="req[status]">"Status"</label>
+                            <select name="req[status]">
                                 <option value="ToDo">"To Do"</option>
                                 <option value="Solicitated">"Applied"</option>
                                 <option value="Pending">"Pending"</option>
@@ -239,6 +315,7 @@ fn CreateApplicationForm() -> impl IntoView {
     }
 }
 
+#[cfg(feature = "ssr")]
 impl From<Application> for AllApplicationsResponse {
     fn from(s: Application) -> Self {
         Self {
@@ -250,7 +327,44 @@ impl From<Application> for AllApplicationsResponse {
     }
 }
 
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[cfg(feature = "ssr")]
+#[derive(sqlx::FromRow)]
+struct ApplicationRow {
+    id: String,
+    status: String,
+    date: String,
+    company_id: String,
+    name: String,
+    website: String,
+    ceo: String,
+    industry: String,
+}
+
+#[cfg(feature = "ssr")]
+impl TryFrom<ApplicationRow> for AllApplicationsResponse {
+    type Error = ServerFnError;
+
+    fn try_from(r: ApplicationRow) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: Uuid::parse_str(&r.id).map_err(|e| ServerFnError::new(e.to_string()))?,
+            status: r
+                .status
+                .parse()
+                .map_err(|e: String| ServerFnError::new(e))?,
+            date: r.date,
+            company: Company {
+                id: Uuid::parse_str(&r.company_id)
+                    .map_err(|e| ServerFnError::new(e.to_string()))?,
+                name: r.name,
+                website: r.website,
+                ceo: r.ceo,
+                industry: r.industry,
+            },
+        })
+    }
+}
+
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 struct AllApplicationsResponse {
     id: Uuid,
     company: Company,
@@ -272,6 +386,7 @@ struct CreateCompanyRequest {
     industry: String,
 }
 
+#[cfg(feature = "ssr")]
 #[derive(Clone, PartialEq)]
 struct Application {
     id: Uuid,
@@ -280,7 +395,7 @@ struct Application {
     date: OffsetDateTime,
 }
 
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 struct Company {
     id: Uuid,
     name: String,
@@ -311,14 +426,30 @@ impl std::fmt::Display for Status {
     }
 }
 
+impl std::str::FromStr for Status {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ToDo" => Ok(Status::ToDo),
+            "Solicitated" => Ok(Status::Solicitated),
+            "Pending" => Ok(Status::Pending),
+            "Accepted" => Ok(Status::Accepted),
+            "Rejected" => Ok(Status::Rejected),
+            _ => Err(format!("Invalid status: {s}")),
+        }
+    }
+}
+
 impl Status {
-    fn next(self) -> Self {
+    #[cfg(feature = "ssr")]
+    fn as_str(&self) -> &'static str {
         match self {
-            Status::ToDo => Status::Solicitated,
-            Status::Solicitated => Status::Pending,
-            Status::Pending => Status::Accepted,
-            Status::Accepted => Status::Rejected,
-            Status::Rejected => Status::ToDo,
+            Status::ToDo => "ToDo",
+            Status::Solicitated => "Solicitated",
+            Status::Pending => "Pending",
+            Status::Accepted => "Accepted",
+            Status::Rejected => "Rejected",
         }
     }
 
@@ -333,17 +464,19 @@ impl Status {
     }
 }
 
+#[cfg(feature = "ssr")]
 impl Application {
-    pub fn new(company: &Company) -> Self {
+    pub fn new(company: &Company, status: Status) -> Self {
         Self {
             id: Uuid::new_v4(),
             company: company.clone(),
-            status: Status::default(),
+            status,
             date: OffsetDateTime::now_utc(),
         }
     }
 }
 
+#[cfg(feature = "ssr")]
 impl Company {
     pub fn new(name: String, website: String, ceo: String, industry: String) -> Self {
         let id = Uuid::new_v4();

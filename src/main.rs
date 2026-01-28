@@ -2,11 +2,21 @@
 #[tokio::main]
 async fn main() {
     use axum::Router;
-    use leptos::logging::log;
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use soulcrush::app::*;
     use sqlx::sqlite::SqlitePoolOptions;
+    use tower_http::trace::TraceLayer;
+    use tracing::info;
+    use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+
+    tracing_subscriber::registry()
+        .with(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "soulcrush=debug,tower_http=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
     dotenvy::dotenv().ok();
 
@@ -46,11 +56,10 @@ async fn main() {
             },
         )
         .fallback(leptos_axum::file_and_error_handler(shell))
-        .with_state(leptos_options);
+        .with_state(leptos_options)
+        .layer(TraceLayer::new_for_http());
 
-    // run our app with hyper
-    // `axum::Server` is a re-export of `hyper::Server`
-    log!("listening on http://{}", &addr);
+    info!("listening on http://{}", &addr);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app.into_make_service())
         .await
