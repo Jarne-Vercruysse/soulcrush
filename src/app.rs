@@ -79,8 +79,6 @@ async fn get_all_applications() -> Result<Vec<AllApplicationsResponse>, ServerFn
 #[server]
 #[cfg_attr(feature = "ssr", tracing::instrument(ret, err, fields(application_id = %id)))]
 async fn delete_application(id: Uuid) -> Result<(), ServerFnError> {
-    tracing::info!("deleting application");
-
     use sqlx::SqlitePool;
     let pool = expect_context::<SqlitePool>();
 
