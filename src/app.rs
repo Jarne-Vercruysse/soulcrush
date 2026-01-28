@@ -5,9 +5,9 @@ use leptos_router::{
     StaticSegment,
 };
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ssr")]
-use time::OffsetDateTime;
 use uuid::Uuid;
+#[cfg(feature = "ssr")]
+use {sqlx::SqlitePool, time::OffsetDateTime};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -56,8 +56,6 @@ pub fn App() -> impl IntoView {
 #[server]
 #[cfg_attr(feature = "ssr", tracing::instrument(ret, err))]
 async fn get_all_applications() -> Result<Vec<AllApplicationsResponse>, ServerFnError> {
-    use sqlx::SqlitePool;
-
     let pool = expect_context::<SqlitePool>();
 
     let rows: Vec<ApplicationRow> = sqlx::query_as(
@@ -79,7 +77,6 @@ async fn get_all_applications() -> Result<Vec<AllApplicationsResponse>, ServerFn
 #[server]
 #[cfg_attr(feature = "ssr", tracing::instrument(ret, err, fields(application_id = %id)))]
 async fn delete_application(id: Uuid) -> Result<(), ServerFnError> {
-    use sqlx::SqlitePool;
     let pool = expect_context::<SqlitePool>();
 
     sqlx::query("DELETE FROM applications WHERE id = ?")
@@ -93,39 +90,44 @@ async fn delete_application(id: Uuid) -> Result<(), ServerFnError> {
 #[server]
 #[cfg_attr(feature = "ssr", tracing::instrument(ret, err, skip(req), fields(company = %req.company.name)))]
 async fn create_application(req: CreateApplicationRequest) -> Result<(), ServerFnError> {
-    use sqlx::SqlitePool;
-
     let pool = expect_context::<SqlitePool>();
+
     let company = Company::new(
         req.company.name,
         req.company.website,
         req.company.ceo,
         req.company.industry,
     );
+    let application = Application::new(&company, req.status);
 
-    let application = Application::new(&company);
+    insert_application(&pool, &application).await
+}
 
+#[cfg(feature = "ssr")]
+async fn insert_application(
+    pool: &SqlitePool,
+    application: &Application,
+) -> Result<(), ServerFnError> {
     let mut tx = pool.begin().await?;
 
     sqlx::query("INSERT INTO companies (id, name, website, ceo, industry) VALUES (?, ?, ?, ?, ?)")
-        .bind(company.id.to_string())
-        .bind(company.name)
-        .bind(company.website)
-        .bind(company.ceo)
-        .bind(company.industry)
+        .bind(application.company.id.to_string())
+        .bind(&application.company.name)
+        .bind(&application.company.website)
+        .bind(&application.company.ceo)
+        .bind(&application.company.industry)
         .execute(&mut *tx)
         .await?;
 
     sqlx::query("INSERT INTO applications (id, company_id, status, date) VALUES (?, ?, ?, ?)")
         .bind(application.id.to_string())
-        .bind(company.id.to_string())
-        .bind(format!("{:?}", req.status))
+        .bind(application.company.id.to_string())
+        .bind(application.status.as_str())
         .bind(application.date.to_string())
         .execute(&mut *tx)
         .await?;
 
     tx.commit().await?;
-
     Ok(())
 }
 
@@ -399,6 +401,16 @@ impl std::str::FromStr for Status {
 }
 
 impl Status {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Status::ToDo => "ToDo",
+            Status::Solicitated => "Solicitated",
+            Status::Pending => "Pending",
+            Status::Accepted => "Accepted",
+            Status::Rejected => "Rejected",
+        }
+    }
+
     fn next(self) -> Self {
         match self {
             Status::ToDo => Status::Solicitated,
@@ -422,11 +434,11 @@ impl Status {
 
 #[cfg(feature = "ssr")]
 impl Application {
-    pub fn new(company: &Company) -> Self {
+    pub fn new(company: &Company, status: Status) -> Self {
         Self {
             id: Uuid::new_v4(),
             company: company.clone(),
-            status: Status::default(),
+            status,
             date: OffsetDateTime::now_utc(),
         }
     }
