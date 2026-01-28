@@ -225,7 +225,10 @@ fn ApplicationCard(application: AllApplicationsResponse) -> impl IntoView {
         let target = event_target::<web_sys::HtmlSelectElement>(&ev);
         if let Ok(new_status) = target.value().parse::<Status>() {
             status.set(new_status);
-            update_status_action.dispatch(UpdateApplicationStatus { id, status: new_status });
+            update_status_action.dispatch(UpdateApplicationStatus {
+                id,
+                status: new_status,
+            });
         }
     };
 
@@ -439,6 +442,7 @@ impl std::str::FromStr for Status {
 }
 
 impl Status {
+    #[cfg(feature = "ssr")]
     fn as_str(&self) -> &'static str {
         match self {
             Status::ToDo => "ToDo",

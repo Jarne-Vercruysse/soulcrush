@@ -523,6 +523,41 @@ h1 {
   }
 }
 
+/* STATUS SELECT DROPDOWN */
+.status-select {
+  appearance: none;
+  min-width: 6rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: 4px;
+  border: 1px solid transparent;
+  font-size: var(--text-xs);
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition-smooth);
+
+  &:focus {
+    outline: none;
+    box-shadow: var(--glow-magenta);
+  }
+
+  /* Status colors (same as badges) */
+  &.status-todo { background: var(--cyber-elevated); color: var(--text-muted); }
+  &.status-solicitated { background: var(--info); color: var(--cyber-void); }
+  &.status-pending { background: var(--warning); color: var(--cyber-void); }
+  &.status-accepted { background: var(--success); color: var(--cyber-void); }
+  &.status-rejected { background: var(--error); color: var(--text-primary); }
+
+  /* Style options (limited browser support) */
+  option {
+    background: var(--cyber-surface);
+    color: var(--text-primary);
+    padding: var(--space-xs);
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════
    BUTTONS
    ══════════════════════════════════════════════════════════════ */
