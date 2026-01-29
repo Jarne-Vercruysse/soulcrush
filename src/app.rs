@@ -187,7 +187,7 @@ fn ApplicationList() -> impl IntoView {
                 <span>"Industry"</span>
                 <span>"Link"</span>
                 <span>"Status"</span>
-                <span></span>
+                <span>"Action"</span>
             </div>
             <Suspense fallback=|| ()>
                 {move || Suspend::new(async move {
